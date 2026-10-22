@@ -1,0 +1,11 @@
+{
+  "Group": "Misc",
+  "FriendlyName": "Nopwara webhooks",
+  "SystemName": "Misc.NopwaraWebhooks",
+  "Version": "1.00",
+  "SupportedVersions": [ "5.00" ],
+  "Author": "Nopwara",
+  "DisplayOrder": 1,
+  "FileName": "Nop.Plugin.Misc.NopwaraWebhooks.dll",
+  "Description": "Signed webhooks for orders, customers, products, stock and shipments, with retries and a delivery log. Connect nopCommerce to Zapier, Make, n8n, an ERP or any HTTP endpoint."
+}

@@ -1,0 +1,164 @@
+@model Nop.Plugin.Misc.NopwaraWebhooks.Models.SubscriptionModel
+
+@using Nop.Plugin.Misc.NopwaraWebhooks.Models
+@using Nop.Web.Framework.Models.DataTables
+@using Microsoft.AspNetCore.Routing
+
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = T("Plugins.Misc.NopwaraWebhooks.Webhooks").Text;
+    NopHtml.SetActiveMenuItemSystemName(Nop.Plugin.Misc.NopwaraWebhooks.NopwaraWebhooksDefaults.ADMIN_MENU_SYSTEM_NAME);
+    var isNew = Model.Id == 0;
+}
+
+<form asp-controller="NopwaraWebhooksAdmin" asp-action="@(isNew ? "Create" : "Edit")" method="post">
+    <input asp-for="Id" type="hidden" />
+    <div class="content-header clearfix">
+        <h1 class="float-left">
+            @(isNew ? T("Plugins.Misc.NopwaraWebhooks.AddNew") : T("Plugins.Misc.NopwaraWebhooks.Edit"))
+            <small>
+                <i class="fas fa-arrow-circle-left"></i>
+                <a asp-action="List">@T("Plugins.Misc.NopwaraWebhooks.BackToList")</a>
+            </small>
+        </h1>
+        <div class="float-right">
+            <button type="submit" name="save" class="btn btn-primary">
+                <i class="far fa-floppy-disk"></i>
+                @T("Admin.Common.Save")
+            </button>
+            @if (!isNew)
+            {
+                <button type="submit" form="send-test-form" class="btn btn-info">
+                    <i class="fas fa-paper-plane"></i>
+                    @T("Plugins.Misc.NopwaraWebhooks.Test")
+                </button>
+                <span id="subscription-delete" class="btn btn-danger">
+                    <i class="far fa-trash-can"></i>
+                    @T("Admin.Common.Delete")
+                </span>
+            }
+        </div>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div asp-validation-summary="All"></div>
+            <div class="card card-default">
+                <div class="card-body">
+                    <div class="form-group row">
+                        <div class="col-md-3"><nop-label asp-for="Name" /></div>
+                        <div class="col-md-9"><nop-editor asp-for="Name" asp-required="true" /><span asp-validation-for="Name"></span></div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-md-3"><nop-label asp-for="Url" /></div>
+                        <div class="col-md-9"><nop-editor asp-for="Url" asp-required="true" /><span asp-validation-for="Url"></span></div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-md-3"><nop-label asp-for="Secret" /></div>
+                        <div class="col-md-9">
+                            <nop-editor asp-for="Secret" />
+                            <small class="form-text text-muted">@T("Plugins.Misc.NopwaraWebhooks.Fields.Secret.Info")</small>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-md-3"><nop-label asp-for="AllEvents" /></div>
+                        <div class="col-md-9"><nop-editor asp-for="AllEvents" /></div>
+                    </div>
+                    <div class="form-group row" id="events-group">
+                        <div class="col-md-3"><nop-label asp-for="SelectedEvents" /></div>
+                        <div class="col-md-9">
+                            @foreach (var item in Model.AvailableEvents)
+                            {
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="SelectedEvents" value="@item.Value" id="event-@item.Value" @(item.Selected ? "checked" : null) />
+                                    <label class="form-check-label" for="event-@item.Value"><code>@item.Text</code></label>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-md-3"><nop-label asp-for="IsActive" /></div>
+                        <div class="col-md-9"><nop-editor asp-for="IsActive" /></div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-md-3"><nop-label asp-for="StoreId" /></div>
+                        <div class="col-md-9"><nop-select asp-for="StoreId" asp-items="Model.AvailableStores" /></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</form>
+<script>
+    $(function () {
+        function toggleEvents() { $('#events-group').toggle(!$('#@Html.IdFor(m => m.AllEvents)').is(':checked')); }
+        $('#@Html.IdFor(m => m.AllEvents)').on('change', toggleEvents);
+        toggleEvents();
+    });
+</script>
+
+@if (!isNew)
+{
+    <form asp-action="SendTest" asp-route-id="@Model.Id" method="post" id="send-test-form"></form>
+    <nop-delete-confirmation asp-model-id="@Model.Id" asp-button-id="subscription-delete" />
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="card card-default">
+                <div class="card-header">
+                    <h3 class="card-title">@T("Plugins.Misc.NopwaraWebhooks.Deliveries")</h3>
+                </div>
+                <div class="card-body">
+                    @await Html.PartialAsync("Table", new DataTablesModel
+                    {
+                        Name = "deliveries-grid",
+                        UrlRead = new DataUrl("DeliveryList", "NopwaraWebhooksAdmin", new RouteValueDictionary { [nameof(DeliverySearchModel.SubscriptionId)] = Model.Id }),
+                        Length = Model.DeliverySearchModel.PageSize,
+                        LengthMenu = Model.DeliverySearchModel.AvailablePageSizes,
+                        ColumnCollection = new List<ColumnProperty>
+                        {
+                            new(nameof(DeliveryModel.CreatedOn)) { Title = T("Plugins.Misc.NopwaraWebhooks.Fields.CreatedOn").Text, Width = "170", Render = new RenderDate() },
+                            new(nameof(DeliveryModel.Event)) { Title = T("Plugins.Misc.NopwaraWebhooks.Fields.Event").Text, Width = "170" },
+                            new(nameof(DeliveryModel.Status)) { Title = T("Plugins.Misc.NopwaraWebhooks.Fields.Status").Text, Width = "100" },
+                            new(nameof(DeliveryModel.Attempts)) { Title = T("Plugins.Misc.NopwaraWebhooks.Fields.Attempts").Text, Width = "80", ClassName = NopColumnClassDefaults.CenterAll },
+                            new(nameof(DeliveryModel.Response)) { Title = T("Plugins.Misc.NopwaraWebhooks.Fields.Response").Text },
+                            new(nameof(DeliveryModel.Id)) { Title = string.Empty, Width = "220", ClassName = NopColumnClassDefaults.Button, Render = new RenderCustom("renderDeliveryActions") }
+                        }
+                    })
+                    <div class="modal fade" id="payload-modal" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">@T("Plugins.Misc.NopwaraWebhooks.Payload")</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                </div>
+                                <div class="modal-body"><pre id="payload-content" style="white-space: pre-wrap; max-height: 60vh"></pre></div>
+                            </div>
+                        </div>
+                    </div>
+                    <script>
+                        function renderDeliveryActions(data, type, row) {
+                            return '<button type="button" class="btn btn-default btn-sm mr-1" onclick="showPayload(' + row.Id + ')"><i class="far fa-file-code"></i> @T("Plugins.Misc.NopwaraWebhooks.Payload")</button>' +
+                                '<button type="button" class="btn btn-default btn-sm" onclick="redeliver(' + row.Id + ', this)"><i class="fas fa-rotate-right"></i> @T("Plugins.Misc.NopwaraWebhooks.Redeliver")</button>';
+                        }
+                        function showPayload(id) {
+                            var row = $('#deliveries-grid').DataTable().rows().data().toArray().find(function (r) { return r.Id === id; });
+                            var text = row ? row.Payload : '';
+                            try { text = JSON.stringify(JSON.parse(text), null, 2); } catch (e) { }
+                            $('#payload-content').text(text);
+                            $('#payload-modal').modal('show');
+                        }
+                        function redeliver(id, button) {
+                            $(button).prop('disabled', true);
+                            var postData = { id: id };
+                            addAntiForgeryToken(postData);
+                            $.post('@Url.Action("Redeliver", "NopwaraWebhooksAdmin")', postData).always(function () {
+                                updateTable('#deliveries-grid');
+                            });
+                        }
+                    </script>
+                </div>
+            </div>
+        </div>
+    </section>
+}

@@ -1,0 +1,51 @@
+@model Nop.Plugin.Misc.NopwaraWebhooks.Models.SubscriptionSearchModel
+
+@using Nop.Plugin.Misc.NopwaraWebhooks.Models
+@using Nop.Web.Framework.Models.DataTables
+
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = T("Plugins.Misc.NopwaraWebhooks.Webhooks").Text;
+    NopHtml.SetActiveMenuItemSystemName(Nop.Plugin.Misc.NopwaraWebhooks.NopwaraWebhooksDefaults.ADMIN_MENU_SYSTEM_NAME);
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">@T("Plugins.Misc.NopwaraWebhooks.Webhooks")</h1>
+    <div class="float-right">
+        <form asp-action="SendPending" method="post" class="d-inline">
+            <button type="submit" class="btn btn-default">
+                <i class="fas fa-paper-plane"></i>
+                @T("Plugins.Misc.NopwaraWebhooks.SendPending")
+            </button>
+        </form>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="fas fa-square-plus"></i>
+            @T("Admin.Common.AddNew")
+        </a>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-default">
+            <div class="card-body">
+                <p class="text-muted">@T("Plugins.Misc.NopwaraWebhooks.Instructions")</p>
+                @await Html.PartialAsync("Table", new DataTablesModel
+                {
+                    Name = "subscriptions-grid",
+                    UrlRead = new DataUrl("SubscriptionList", "NopwaraWebhooksAdmin", null),
+                    Length = Model.PageSize,
+                    LengthMenu = Model.AvailablePageSizes,
+                    ColumnCollection = new List<ColumnProperty>
+                    {
+                        new(nameof(SubscriptionModel.Name)) { Title = T("Plugins.Misc.NopwaraWebhooks.Fields.Name").Text, Width = "200" },
+                        new(nameof(SubscriptionModel.Url)) { Title = T("Plugins.Misc.NopwaraWebhooks.Fields.Url").Text },
+                        new(nameof(SubscriptionModel.EventsText)) { Title = T("Plugins.Misc.NopwaraWebhooks.Fields.Events").Text, Width = "260" },
+                        new(nameof(SubscriptionModel.IsActive)) { Title = T("Plugins.Misc.NopwaraWebhooks.Fields.IsActive").Text, Width = "80", ClassName = NopColumnClassDefaults.CenterAll, Render = new RenderBoolean() },
+                        new(nameof(SubscriptionModel.Id)) { Title = T("Admin.Common.Edit").Text, Width = "80", ClassName = NopColumnClassDefaults.Button, Render = new RenderButtonEdit(new DataUrl("~/Admin/NopwaraWebhooksAdmin/Edit")) }
+                    }
+                })
+            </div>
+        </div>
+    </div>
+</section>
